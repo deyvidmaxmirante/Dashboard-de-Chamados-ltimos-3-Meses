@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Chamados</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="dashboard-moderno.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-bar"></i>
+                    <h1>Controle de Chamados</h1>
+                </div>
+                <div class="subtitle">Visualização inteligente de dados da planilha</div>
+                <div class="admin-badge">
+                    <i class="fas fa-user-shield"></i>
+                    Admin
+                </div>
+            </div>
+        </header>
+
+        <!-- Configuração Inicial (oculta após configurar) -->
+        <div class="config-panel" id="configPanel">
+            <div class="config-content">
+                <h3><i class="fas fa-cog"></i> Configuração Inicial</h3>
+                <div class="config-row">
+                    <label>🔑 API Key do Google Sheets:</label>
+                    <input type="password" id="apiKey" placeholder="Cole sua API Key aqui" />
+                </div>
+                <div class="config-row">
+                    <label>📊 URL da Planilha:</label>
+                    <input type="url" id="spreadsheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." value="https://docs.google.com/spreadsheets/d/14Vp836ON9HaqP77aQxKm_GpA86DPBKmdLjx76Yut8ys/" />
+                </div>
+                <button class="config-btn" onclick="saveConfigAndLoad()">
+                    <i class="fas fa-save"></i> Salvar e Carregar Dados
+                </button>
+                <div id="configStatus" class="status"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard Principal -->
+        <div class="dashboard" id="mainDashboard" style="display: none;">
+            <!-- Cards de Estatísticas -->
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <div class="stat-number" id="totalChamados">0</div>
+                    <div class="stat-label">Total de Chamados</div>
+                </div>
+                <div class="stat-card secondary">
+                    <div class="stat-number" id="chamadosAbertos">0</div>
+                    <div class="stat-label">Chamados Abertos (C2)</div>
+                </div>
+                <div class="stat-card accent">
+                    <div class="stat-number" id="periodoAtual">-</div>
+                    <div class="stat-label">Período Selecionado</div>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="controls-section">
+                <div class="control-group">
+                    <label>Selecionar Período:</label>
+                    <select id="periodoSelect" onchange="updatePeriod()">
+                        <option value="all">Todos os Períodos</option>
+                    </select>
+                    <button class="update-btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Atualizar Dados
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <label>Selecionar Dados (Principal):</label>
+                    <select id="dadosPrincipal" onchange="updateVisualization()">
+                        <option value="transportadora">Transportadora</option>
+                        <option value="atendente">Atendente</option>
+                        <option value="motivo">Motivo do Chamado</option>
+                        <option value="estado">Estado do Cliente</option>
+                        <option value="status">Status Atual</option>
+                    </select>
+
+                    <label>Comparar Com (Opcional):</label>
+                    <select id="compararCom" onchange="updateVisualization()">
+                        <option value="">Nenhum</option>
+                        <option value="transportadora">Transportadora</option>
+                        <option value="atendente">Atendente</option>
+                        <option value="motivo">Motivo do Chamado</option>
+                        <option value="estado">Estado do Cliente</option>
+                        <option value="status">Status Atual</option>
+                    </select>
+
+                    <button class="visualize-btn" onclick="updateVisualization()">
+                        <i class="fas fa-eye"></i> Visualizar Dados
+                    </button>
+                </div>
+            </div>
+
+            <!-- Conteúdo Principal -->
+            <div class="main-content">
+                <!-- Lista de Itens -->
+                <div class="items-list">
+                    <h3 id="itemsTitle">Transportadora</h3>
+                    <div id="itemsList" class="list-container">
+                        <!-- Items serão inseridos aqui -->
+                    </div>
+                </div>
+
+                <!-- Gráfico -->
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-pie"></i> <span id="chartTitle">Distribuição por Transportadora</span></h3>
+                        <button class="expand-chart-btn" onclick="expandChart()">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Análise Cruzada (quando comparação está ativa) -->
+            <div class="cross-analysis" id="crossAnalysis" style="display: none;">
+                <h3><i class="fas fa-project-diagram"></i> Análise Cruzada</h3>
+                <div class="cross-chart-container">
+                    <canvas id="crossChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Rodapé com Informações -->
+            <div class="footer-info">
+                <div class="info-item">
+                    <i class="fas fa-clock"></i>
+                    <span>Última atualização: <span id="lastUpdate">-</span></span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-database"></i>
+                    <span>Registros carregados: <span id="totalRecords">0</span></span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-filter"></i>
+                    <span>Filtro: Últimos 3 meses</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Gráfico Expandido -->
+    <div id="chartModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalChartTitle">Gráfico Expandido</h3>
+                <button class="close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-chart-container">
+                <canvas id="modalChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard-moderno.js"></script>
+</body>
+</html>
